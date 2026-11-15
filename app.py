@@ -28,26 +28,20 @@ h1, h2, h3 {
 
 # ---------------- SUPABASE CONNECTION ----------------
 
-@st.cache_resource
-def get_supabase():
-    return create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_KEY"]
-    )
-
-
 try:
-    supabase = get_supabase()
+    if "supabase_client" not in st.session_state:
+        st.session_state.supabase_client = create_client(
+            st.secrets["SUPABASE_URL"],
+            st.secrets["SUPABASE_KEY"]
+        )
+
+    supabase = st.session_state.supabase_client
+
 except Exception as e:
-    st.error("Supabase connection failed. Check your Streamlit Secrets.")
+    st.error("Supabase connection failed. Check Streamlit Secrets.")
     st.stop()
 
 
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
-
-if "user_email" not in st.session_state:
-    st.session_state.user_email = None
 
 
 # ---------------- AUTHENTICATION ----------------
