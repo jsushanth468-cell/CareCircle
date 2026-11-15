@@ -3,115 +3,127 @@ import streamlit as st
 from supabase import create_client
 from datetime import date
 
-# ---------------- PAGE SETTINGS ----------------
-
-import streamlit as st
-from supabase import create_client
-from datetime import date
+# =====================================================
+# PAGE CONFIGURATION
+# =====================================================
 
 st.set_page_config(
-    page_title="CareCircle",
+    page_title="CareCircle | Care Together",
     page_icon="💚",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# =====================================================
+# PREMIUM DESIGN
+# =====================================================
 
-# ---------------- PREMIUM CARECIRCLE DESIGN ----------------
+st.markdown("""
+<style>
 
-st.markdown(
-    """
-    <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-    /* Main background */
-    .stApp {
-        background: linear-gradient(
-            135deg,
-            #f4fbf7,
-            #edf7f1
-        );
-        color: #183b2b;
-    }
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+}
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #123d2b;
-    }
+.stApp {
+    background: #f4f8f5;
+    color: #173b2b;
+}
 
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
+[data-testid="stHeader"] {
+    background: transparent;
+}
 
-    /* Headings */
-    h1, h2, h3 {
-        color: #145c3a !important;
-        font-weight: 750 !important;
-    }
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #103d2b, #092c20);
+}
 
-    /* Buttons */
-    .stButton > button {
-        background-color: #16834b;
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.65rem 1rem;
-        font-weight: 650;
-    }
+[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
 
-    .stButton > button:hover {
-        background-color: #0d6036;
-        color: white;
-        border: none;
-    }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    color: #d4ebdc !important;
+}
 
-    /* Input fields */
-    .stTextInput input,
-    .stTextArea textarea {
-        border-radius: 10px;
-    }
+h1, h2, h3 {
+    color: #145c3a !important;
+    font-weight: 800 !important;
+}
 
-    /* Dashboard metric cards */
-    [data-testid="stMetric"] {
-        background-color: white;
-        padding: 20px;
-        border-radius: 16px;
-        border: 1px solid #dceee3;
-        box-shadow: 0 4px 14px rgba(20, 92, 58, 0.06);
-    }
+p {
+    color: #496454;
+}
 
-    [data-testid="stMetricValue"] {
-        color: #16834b;
-        font-weight: 800;
-    }
+.stButton > button {
+    background: linear-gradient(120deg, #16834b, #23965b);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    min-height: 42px;
+    transition: 0.2s;
+}
 
-    /* Forms */
-    div[data-testid="stForm"] {
-        background-color: white;
-        padding: 20px;
-        border-radius: 16px;
-        border: 1px solid #dceee3;
-    }
+.stButton > button:hover {
+    background: #0c6338;
+    color: white;
+    border: none;
+}
 
-    /* Cards */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 16px;
-    }
+.stTextInput input,
+.stTextArea textarea {
+    border-radius: 10px;
+}
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+[data-testid="stMetric"] {
+    background: white;
+    padding: 23px;
+    border-radius: 17px;
+    border: 1px solid #dcebe1;
+    box-shadow: 0 5px 18px rgba(16, 61, 43, 0.06);
+}
 
+[data-testid="stMetricLabel"] {
+    color: #587465 !important;
+    font-weight: 600;
+}
 
+[data-testid="stMetricValue"] {
+    color: #16834b !important;
+    font-weight: 800;
+}
 
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #dcebe1;
+}
 
+div[data-testid="stForm"] {
+    background: white;
+    padding: 22px;
+    border-radius: 16px;
+    border: 1px solid #dcebe1;
+}
 
+hr {
+    border-color: #dcebe1;
+}
 
+.small-note {
+    color: #718579;
+    font-size: 13px;
+}
 
+</style>
+""", unsafe_allow_html=True)
 
-
-
-# ---------------- SESSION STATE ----------------
+# =====================================================
+# SESSION STATE
+# =====================================================
 
 if "user_id" not in st.session_state:
     st.session_state.user_id = None
@@ -119,7 +131,9 @@ if "user_id" not in st.session_state:
 if "user_email" not in st.session_state:
     st.session_state.user_email = None
 
-# ---------------- SUPABASE CONNECTION ----------------
+# =====================================================
+# SUPABASE CONNECTION
+# =====================================================
 
 try:
     if "supabase_client" not in st.session_state:
@@ -130,8 +144,9 @@ try:
 
     supabase = st.session_state.supabase_client
 
-except Exception as e:
-    st.error("Could not connect to Supabase. Please check Streamlit Secrets.")
+except Exception:
+    st.error("Unable to connect to CareCircle database.")
+    st.info("Please check your Supabase settings in Streamlit Secrets.")
     st.stop()
 
 
@@ -141,7 +156,9 @@ def get_value(obj, key):
     return getattr(obj, key, None)
 
 
-# ---------------- DATABASE FUNCTIONS ----------------
+# =====================================================
+# DATABASE FUNCTIONS
+# =====================================================
 
 def get_data(table):
     try:
@@ -152,18 +169,22 @@ def get_data(table):
             .execute()
         )
         return response.data or []
+
     except Exception as e:
-        st.error(f"Could not load {table}: {e}")
+        st.error(f"Unable to load {table}: {e}")
         return []
 
 
 def add_data(table, values):
     try:
-        values["user_id"] = st.session_state.user_id
-        supabase.table(table).insert(values).execute()
+        record = dict(values)
+        record["user_id"] = st.session_state.user_id
+
+        supabase.table(table).insert(record).execute()
         return True
+
     except Exception as e:
-        st.error(f"Could not save information: {e}")
+        st.error(f"Unable to save information: {e}")
         return False
 
 
@@ -177,46 +198,77 @@ def delete_data(table, row_id):
             .execute()
         )
         return True
+
     except Exception as e:
-        st.error(f"Could not delete information: {e}")
+        st.error(f"Unable to delete information: {e}")
         return False
 
 
-def update_medication(row_id, new_status):
+def update_medication(row_id, status):
     try:
         (
             supabase.table("Medications")
-            .update({"status": new_status})
+            .update({"status": status})
             .eq("id", row_id)
             .eq("user_id", st.session_state.user_id)
             .execute()
         )
         return True
+
     except Exception as e:
-        st.error(f"Could not update medication: {e}")
+        st.error(f"Unable to update medication: {e}")
         return False
 
 
-# ---------------- LOGIN / SIGN UP ----------------
+# =====================================================
+# AUTHENTICATION SCREEN
+# =====================================================
 
 if st.session_state.user_id is None:
 
-    st.title("💚 CareCircle")
-    st.subheader("Care, connection and peace of mind")
+    st.markdown("""
+    <div style="
+        background: linear-gradient(120deg,#103d2b,#23965b);
+        padding: 35px;
+        border-radius: 22px;
+        margin-bottom: 25px;
+        text-align: center;
+    ">
+        <div style="font-size:45px;">💚</div>
+        <h1 style="color:white !important;">
+            Welcome to CareCircle
+        </h1>
+        <p style="color:#e0f5e7;font-size:17px;">
+            Care better. Stay connected. Make every day easier.
+        </p>
+        <p style="color:#d0ead9;">
+            Everyday care coordination, brought together.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    login_tab, signup_tab = st.tabs(["Login", "Sign Up"])
+    login_tab, signup_tab = st.tabs(["🔐 Login", "✨ Create Account"])
 
     with login_tab:
-        st.markdown("### Welcome back")
+
+        st.subheader("Welcome back")
+        st.write("Sign in to continue to your care dashboard.")
 
         with st.form("login_form"):
-            email = st.text_input("Email")
+
+            email = st.text_input("Email address")
             password = st.text_input("Password", type="password")
-            login_button = st.form_submit_button("Login", use_container_width=True)
+
+            login_button = st.form_submit_button(
+                "Login to CareCircle",
+                use_container_width=True
+            )
 
         if login_button:
+
             if not email or not password:
                 st.warning("Please enter your email and password.")
+
             else:
                 try:
                     result = supabase.auth.sign_in_with_password({
@@ -230,18 +282,22 @@ if st.session_state.user_id is None:
                     if user_id:
                         st.session_state.user_id = str(user_id)
                         st.session_state.user_email = email
-                        st.success("Login successful!")
+                        st.success("Welcome to CareCircle!")
                         st.rerun()
+
                     else:
-                        st.error("Login failed. Please check your details.")
+                        st.error("Login unsuccessful. Please try again.")
 
                 except Exception as e:
                     st.error(f"Login error: {e}")
 
     with signup_tab:
-        st.markdown("### Create your account")
+
+        st.subheader("Create your account")
+        st.write("Join CareCircle and organise everyday care.")
 
         with st.form("signup_form"):
+
             new_email = st.text_input("Email address")
             new_password = st.text_input(
                 "Create password",
@@ -251,18 +307,23 @@ if st.session_state.user_id is None:
                 "Confirm password",
                 type="password"
             )
+
             signup_button = st.form_submit_button(
                 "Create Account",
                 use_container_width=True
             )
 
         if signup_button:
+
             if not new_email or not new_password:
                 st.warning("Please complete all fields.")
+
             elif new_password != confirm_password:
                 st.error("Passwords do not match.")
+
             elif len(new_password) < 6:
                 st.error("Password must contain at least 6 characters.")
+
             else:
                 try:
                     result = supabase.auth.sign_up({
@@ -275,27 +336,46 @@ if st.session_state.user_id is None:
 
                     if user_id:
                         st.success(
-                            "Account created! Please go to Login and sign in."
+                            "Account created! Please log in."
                         )
                     else:
-                        st.error(
-                            "Account was not created. Please try again."
-                        )
+                        st.error("Account creation was unsuccessful.")
 
                 except Exception as e:
                     st.error(f"Sign-up error: {e}")
 
+    st.markdown("""
+    <p style="text-align:center;color:#718579;">
+        💚 CareCircle | Together, we care better.
+    </p>
+    """, unsafe_allow_html=True)
+
     st.stop()
 
 
-# ---------------- MAIN APP ----------------
+# =====================================================
+# SIDEBAR NAVIGATION
+# =====================================================
 
-st.sidebar.title("💚 CareCircle")
-st.sidebar.caption("Your care coordination space")
-st.sidebar.write(f"Logged in: {st.session_state.user_email}")
+st.sidebar.markdown("""
+<div style="text-align:center;padding:18px 5px;">
+    <div style="font-size:38px;">💚</div>
+    <h2 style="color:white !important;margin:0;">
+        CareCircle
+    </h2>
+    <p style="font-size:12px;color:#d4ebdc;">
+        CARE • CONNECT • COORDINATE
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+st.sidebar.divider()
+
+st.sidebar.caption("YOUR WORKSPACE")
+st.sidebar.write(f"👤 {st.session_state.user_email}")
 
 page = st.sidebar.radio(
-    "Navigate",
+    "NAVIGATION",
     [
         "Dashboard",
         "Medications",
@@ -305,7 +385,16 @@ page = st.sidebar.radio(
     ]
 )
 
-if st.sidebar.button("Logout", use_container_width=True):
+st.sidebar.divider()
+
+st.sidebar.markdown("""
+<p style="font-size:12px;color:#cce4d5;">
+    Your everyday care coordination space.
+</p>
+""", unsafe_allow_html=True)
+
+if st.sidebar.button("🚪 Logout", use_container_width=True):
+
     try:
         supabase.auth.sign_out()
     except Exception:
@@ -314,150 +403,233 @@ if st.sidebar.button("Logout", use_container_width=True):
     st.session_state.user_id = None
     st.session_state.user_email = None
     st.session_state.pop("supabase_client", None)
+
     st.rerun()
 
 
-# ---------------- LOAD DATA ----------------
+# =====================================================
+# LOAD USER DATA
+# =====================================================
 
 medications = get_data("Medications")
 appointments = get_data("appoinments")
 members = get_data("Members")
 
 
-# ---------------- DASHBOARD ----------------
+# =====================================================
+# DASHBOARD
+# =====================================================
 
 if page == "Dashboard":
 
     st.markdown("""
-<div style="
-    background: linear-gradient(120deg, #104b32, #23965b);
-    padding: 35px;
-    border-radius: 20px;
-    color: white;
-    margin-bottom: 25px;
-">
-    <h1 style="color:white !important;">
-        Welcome to CareCircle 💚
-    </h1>
-    <p style="color:white; font-size:18px;">
-        Care better. Stay connected. Make every day easier.
-    </p>
-    <p style="color:#d9f5e5;">
-        Your everyday care coordination space.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    <div style="
+        background:linear-gradient(120deg,#103d2b,#23965b);
+        padding:32px;
+        border-radius:20px;
+        margin-bottom:25px;
+    ">
+        <h1 style="color:white !important;">
+            Welcome to CareCircle 💚
+        </h1>
+        <p style="color:#e0f5e7;font-size:17px;">
+            Care better. Stay connected. Make every day easier.
+        </p>
+        <p style="color:#d0ead9;">
+            Your everyday care coordination space.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.subheader("Your Care Overview")
+    st.write("A quick look at your organised care information.")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Medications", len(medications))
+        st.metric(
+            "💊 Medications",
+            len(medications)
+        )
 
     with col2:
-        st.metric("Appointments", len(appointments))
+        st.metric(
+            "📅 Appointments",
+            len(appointments)
+        )
 
     with col3:
-        st.metric("Care Circle Members", len(members))
+        st.metric(
+            "👥 Care Circle Members",
+            len(members)
+        )
 
     st.divider()
 
-    st.subheader("Medication Overview")
+    left, right = st.columns(2)
 
-    if medications:
-        for med in medications:
-            st.write(
-                f"💊 **{med.get('name', 'Medicine')}** — "
-                f"{med.get('scheduled_time', 'Time not set')} "
-                f"| Status: {med.get('status', 'Pending')}"
-            )
+    with left:
+
+        st.subheader("💊 Medication Overview")
+
+        if medications:
+
+            for med in medications:
+
+                with st.container(border=True):
+                    st.write(f"**{med.get('name', 'Medication')}**")
+                    st.write(
+                        f"Time: {med.get('scheduled_time', 'Not set')}"
+                    )
+
+                    status = med.get("status", "Pending")
+
+                    if status == "Recorded":
+                        st.success("Recorded")
+                    else:
+                        st.info("Pending")
+
+        else:
+            st.info("No medication records yet.")
+
+    with right:
+
+        st.subheader("📅 Upcoming Appointments")
+
+        if appointments:
+
+            for appointment in appointments:
+
+                with st.container(border=True):
+                    st.write(
+                        f"**{appointment.get('title', 'Appointment')}**"
+                    )
+                    st.write(
+                        f"Date: {appointment.get('date', 'Not set')}"
+                    )
+                    st.write(
+                        f"Time: {appointment.get('time', 'Not set')}"
+                    )
+
+        else:
+            st.info("No appointments added yet.")
+
+    st.divider()
+
+    st.subheader("👥 Your Care Circle")
+
+    if members:
+
+        member_columns = st.columns(3)
+
+        for index, member in enumerate(members):
+
+            with member_columns[index % 3]:
+                with st.container(border=True):
+                    st.markdown("### 👤")
+                    st.write(f"**{member.get('name', 'Member')}**")
+
     else:
-        st.info("No medications added yet.")
-
-    st.subheader("Upcoming Appointments")
-
-    if appointments:
-        for appointment in appointments:
-            st.write(
-                f"📅 **{appointment.get('title', 'Appointment')}** — "
-                f"{appointment.get('date', '')} "
-                f"at {appointment.get('time', '')}"
-            )
-    else:
-        st.info("No appointments added yet.")
+        st.info("Add members to your Care Circle.")
 
     st.caption(
-        "CareCircle is a demonstration app. Medication statuses are "
-        "user-reported and are not independently verified."
+        "CareCircle is a demonstration project. "
+        "Medication statuses are user-reported and not independently verified."
     )
 
 
-# ---------------- MEDICATIONS ----------------
+# =====================================================
+# MEDICATION MANAGEMENT
+# =====================================================
 
 elif page == "Medications":
 
     st.title("💊 Medication Management")
-    st.write("Keep track of medication information.")
+    st.write("Organise medication information in one place.")
 
-    with st.form("add_medication_form"):
-        medicine_name = st.text_input("Medication name")
-        scheduled_time = st.text_input("Scheduled time")
-        notes = st.text_area("Notes")
-        add_medicine = st.form_submit_button("Add Medication")
+    with st.container(border=True):
 
-    if add_medicine:
-        if not medicine_name.strip():
-            st.warning("Please enter a medication name.")
-        else:
-            success = add_data(
-                "Medications",
-                {
-                    "name": medicine_name.strip(),
-                    "scheduled_time": scheduled_time.strip(),
-                    "notes": notes.strip(),
-                    "status": "Pending"
-                }
+        st.subheader("➕ Add a Medication")
+
+        with st.form("medication_form"):
+
+            medicine_name = st.text_input("Medication name")
+            scheduled_time = st.text_input("Scheduled time")
+            notes = st.text_area("Additional notes")
+
+            add_medicine = st.form_submit_button(
+                "Add Medication",
+                use_container_width=True
             )
-            if success:
-                st.success("Medication added!")
-                st.rerun()
+
+        if add_medicine:
+
+            if not medicine_name.strip():
+                st.warning("Enter a medication name.")
+
+            else:
+                success = add_data(
+                    "Medications",
+                    {
+                        "name": medicine_name.strip(),
+                        "scheduled_time": scheduled_time.strip(),
+                        "notes": notes.strip(),
+                        "status": "Pending"
+                    }
+                )
+
+                if success:
+                    st.success("Medication added successfully!")
+                    st.rerun()
 
     st.divider()
-    st.subheader("Your Medications")
+
+    st.subheader("Your Medication Records")
 
     medications = get_data("Medications")
 
-    if not medications:
-        st.info("No medications have been added.")
-    else:
-        for med in medications:
-            with st.container(border=True):
-                st.write(f"### 💊 {med.get('name', 'Medication')}")
-                st.write(
-                    f"Scheduled time: {med.get('scheduled_time', 'Not set')}"
-                )
-                st.write(f"Notes: {med.get('notes', '')}")
-                st.write(f"Status: {med.get('status', 'Pending')}")
+    if medications:
 
-                status_options = ["Pending", "Recorded"]
+        for med in medications:
+
+            with st.container(border=True):
+
+                st.markdown(
+                    f"### 💊 {med.get('name', 'Medication')}"
+                )
+
+                st.write(
+                    f"**Scheduled time:** {med.get('scheduled_time', 'Not set')}"
+                )
+
+                st.write(
+                    f"**Notes:** {med.get('notes', '')}"
+                )
 
                 current_status = med.get("status", "Pending")
-                if current_status not in status_options:
+
+                options = ["Pending", "Recorded"]
+
+                if current_status not in options:
                     current_status = "Pending"
 
                 selected_status = st.selectbox(
-                    "Update status",
-                    status_options,
-                    index=status_options.index(current_status),
+                    "Medication status",
+                    options,
+                    index=options.index(current_status),
                     key=f"status_{med.get('id')}"
                 )
 
                 col1, col2 = st.columns(2)
 
                 with col1:
+
                     if st.button(
                         "Save Status",
-                        key=f"save_{med.get('id')}"
+                        key=f"save_{med.get('id')}",
+                        use_container_width=True
                     ):
+
                         if update_medication(
                             med.get("id"),
                             selected_status
@@ -466,159 +638,295 @@ elif page == "Medications":
                             st.rerun()
 
                 with col2:
+
                     if st.button(
                         "Delete",
-                        key=f"delete_med_{med.get('id')}"
+                        key=f"delete_{med.get('id')}",
+                        use_container_width=True
                     ):
-                        if delete_data("Medications", med.get("id")):
+
+                        if delete_data(
+                            "Medications",
+                            med.get("id")
+                        ):
                             st.success("Medication deleted.")
                             st.rerun()
 
+    else:
+        st.info("No medication records found.")
 
-# ---------------- APPOINTMENTS ----------------
+
+# =====================================================
+# APPOINTMENTS
+# =====================================================
 
 elif page == "Appointments":
 
-    st.title("📅 Appointments")
+    st.title("📅 Appointment Manager")
     st.write("Keep important appointments organised.")
 
-    with st.form("appointment_form"):
-        title = st.text_input("Appointment title")
-        appointment_date = st.date_input("Appointment date", value=date.today())
-        appointment_time = st.text_input("Appointment time")
-        details = st.text_area("Details")
-        add_appointment = st.form_submit_button("Add Appointment")
+    with st.container(border=True):
 
-    if add_appointment:
-        if not title.strip():
-            st.warning("Please enter an appointment title.")
-        else:
-            success = add_data(
-                "appoinments",
-                {
-                    "title": title.strip(),
-                    "date": str(appointment_date),
-                    "time": appointment_time.strip(),
-                    "details": details.strip()
-                }
+        st.subheader("➕ Create an Appointment")
+
+        with st.form("appointment_form"):
+
+            title = st.text_input("Appointment title")
+
+            appointment_date = st.date_input(
+                "Appointment date",
+                value=date.today()
             )
-            if success:
-                st.success("Appointment added!")
-                st.rerun()
+
+            appointment_time = st.text_input("Appointment time")
+            details = st.text_area("Appointment details")
+
+            add_appointment = st.form_submit_button(
+                "Add Appointment",
+                use_container_width=True
+            )
+
+        if add_appointment:
+
+            if not title.strip():
+                st.warning("Enter an appointment title.")
+
+            else:
+
+                success = add_data(
+                    "appoinments",
+                    {
+                        "title": title.strip(),
+                        "date": str(appointment_date),
+                        "time": appointment_time.strip(),
+                        "details": details.strip()
+                    }
+                )
+
+                if success:
+                    st.success("Appointment added!")
+                    st.rerun()
 
     st.divider()
+
     st.subheader("Your Appointments")
 
     appointments = get_data("appoinments")
 
-    if not appointments:
-        st.info("No appointments added yet.")
-    else:
+    if appointments:
+
         for appointment in appointments:
+
             with st.container(border=True):
-                st.write(f"### 📅 {appointment.get('title', 'Appointment')}")
-                st.write(f"Date: {appointment.get('date', '')}")
-                st.write(f"Time: {appointment.get('time', '')}")
-                st.write(f"Details: {appointment.get('details', '')}")
+
+                st.markdown(
+                    f"### 📅 {appointment.get('title', 'Appointment')}"
+                )
+
+                st.write(
+                    f"**Date:** {appointment.get('date', '')}"
+                )
+
+                st.write(
+                    f"**Time:** {appointment.get('time', '')}"
+                )
+
+                st.write(
+                    f"**Details:** {appointment.get('details', '')}"
+                )
 
                 if st.button(
                     "Delete Appointment",
                     key=f"delete_app_{appointment.get('id')}"
                 ):
-                    if delete_data("appoinments", appointment.get("id")):
+
+                    if delete_data(
+                        "appoinments",
+                        appointment.get("id")
+                    ):
                         st.success("Appointment deleted.")
                         st.rerun()
 
+    else:
+        st.info("No appointments have been added.")
 
-# ---------------- CARE CIRCLE ----------------
+
+# =====================================================
+# CARE CIRCLE
+# =====================================================
 
 elif page == "Care Circle":
 
-    st.title("👥 Care Circle")
-    st.write("Add people who are part of the care network.")
+    st.title("👥 Your Care Circle")
+    st.write("Bring your care network together.")
 
-    with st.form("member_form"):
-        member_name = st.text_input("Member name")
-        add_member = st.form_submit_button("Add Member")
+    with st.container(border=True):
 
-    if add_member:
-        if not member_name.strip():
-            st.warning("Please enter a member name.")
-        else:
-            success = add_data(
-                "Members",
-                {"name": member_name.strip()}
+        st.subheader("➕ Add a Member")
+
+        with st.form("member_form"):
+
+            member_name = st.text_input("Member name")
+
+            add_member = st.form_submit_button(
+                "Add Member",
+                use_container_width=True
             )
-            if success:
-                st.success("Member added!")
-                st.rerun()
+
+        if add_member:
+
+            if not member_name.strip():
+                st.warning("Enter a member name.")
+
+            else:
+
+                success = add_data(
+                    "Members",
+                    {
+                        "name": member_name.strip()
+                    }
+                )
+
+                if success:
+                    st.success("Member added!")
+                    st.rerun()
 
     st.divider()
-    st.subheader("Your Care Circle")
+
+    st.subheader("Your Care Network")
 
     members = get_data("Members")
 
-    if not members:
-        st.info("No members added yet.")
+    if members:
+
+        member_columns = st.columns(2)
+
+        for index, member in enumerate(members):
+
+            with member_columns[index % 2]:
+
+                with st.container(border=True):
+
+                    st.markdown("## 👤")
+                    st.write(
+                        f"**{member.get('name', 'Member')}**"
+                    )
+
+                    if st.button(
+                        "Remove Member",
+                        key=f"remove_{member.get('id')}"
+                    ):
+
+                        if delete_data(
+                            "Members",
+                            member.get("id")
+                        ):
+                            st.success("Member removed.")
+                            st.rerun()
+
     else:
-        for member in members:
-            with st.container(border=True):
-                st.write(f"👤 **{member.get('name', 'Member')}**")
-
-                if st.button(
-                    "Remove Member",
-                    key=f"remove_member_{member.get('id')}"
-                ):
-                    if delete_data("Members", member.get("id")):
-                        st.success("Member removed.")
-                        st.rerun()
+        st.info("Your Care Circle is currently empty.")
 
 
-# ---------------- ACTIVITY FEED ----------------
+# =====================================================
+# ACTIVITY FEED
+# =====================================================
 
 elif page == "Activity Feed":
 
     st.title("📋 Activity Feed")
-    st.write("A simple overview of information saved in CareCircle.")
 
-    st.subheader("Recent Medication Records")
+    st.write(
+        "An overview of the records currently saved in CareCircle."
+    )
+
+    st.subheader("💊 Medication Records")
 
     if medications:
+
         for med in reversed(medications):
-            st.write(
-                f"💊 {med.get('name', 'Medication')} — "
-                f"{med.get('status', 'Pending')}"
-            )
+
+            with st.container(border=True):
+
+                st.write(
+                    f"**{med.get('name', 'Medication')}**"
+                )
+
+                st.write(
+                    f"Status: {med.get('status', 'Pending')}"
+                )
+
+                st.write(
+                    f"Time: {med.get('scheduled_time', 'Not set')}"
+                )
+
     else:
         st.info("No medication activity yet.")
 
     st.divider()
-    st.subheader("Appointment Records")
+
+    st.subheader("📅 Appointment Records")
 
     if appointments:
+
         for appointment in reversed(appointments):
-            st.write(
-                f"📅 {appointment.get('title', 'Appointment')} — "
-                f"{appointment.get('date', '')}"
-            )
+
+            with st.container(border=True):
+
+                st.write(
+                    f"**{appointment.get('title', 'Appointment')}**"
+                )
+
+                st.write(
+                    f"Date: {appointment.get('date', '')}"
+                )
+
+                st.write(
+                    f"Time: {appointment.get('time', '')}"
+                )
+
     else:
         st.info("No appointment activity yet.")
 
     st.divider()
-    st.subheader("Care Circle Updates")
+
+    st.subheader("👥 Care Circle Updates")
 
     if members:
+
         for member in reversed(members):
-            st.write(f"👤 {member.get('name', 'Member')} is in your Care Circle.")
+
+            with st.container(border=True):
+
+                st.write(
+                    f"👤 **{member.get('name', 'Member')}**"
+                )
+
     else:
         st.info("No Care Circle members yet.")
 
 
-# ---------------- FOOTER ----------------
+# =====================================================
+# FOOTER
+# =====================================================
 
 st.divider()
 
-st.caption(
-    "💚 CareCircle | Hackathon Demonstration Project | "
-    "Uses fictional demo information. Not a medical or clinical system."
-)
+st.markdown("""
+<div style="text-align:center;padding:15px;">
+    <h3 style="color:#16834b !important;">
+        💚 CareCircle
+    </h3>
+    <p>
+        Care better. Stay connected.
+    </p>
+    <p style="font-size:12px;color:#718579;">
+        Hackathon Demonstration Project |
+        Everyday Care Coordination
+    </p>
+    <p style="font-size:11px;color:#718579;">
+        Not a medical or clinical system.
+        Medication records are user-reported.
+    </p>
+</div>
+""", unsafe_allow_html=True)
