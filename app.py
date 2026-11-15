@@ -462,7 +462,21 @@ elif section == "Activity":
 
     except Exception as e:
         st.error(f"Could not load activity: {e}")
+        
+# ---------------- SUPABASE CONNECTION ----------------
 
+try:
+    if "supabase_client" not in st.session_state:
+        st.session_state.supabase_client = create_client(
+            st.secrets["SUPABASE_URL"],
+            st.secrets["SUPABASE_KEY"]
+        )
+
+    supabase = st.session_state.supabase_client
+
+except Exception as e:
+    st.error("Supabase connection failed. Check Streamlit Secrets.")
+    st.stop()
 
 # ---------------- FOOTER ----------------
 
