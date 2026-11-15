@@ -1,9 +1,9 @@
 
 import streamlit as st
 from supabase import create_client
-from datetime import date, time
+from datetime import date
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- PAGE SETTINGS ----------------
 
 st.set_page_config(
     page_title="CareCircle",
@@ -11,20 +11,13 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown("""
-<style>
-.stApp {
-    background-color: #f4faf6;
-}
-h1, h2, h3 {
-    color: #176b50;
-}
-.stButton button {
-    border-radius: 10px;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- SESSION STATE ----------------
 
+if "user_id" not in st.session_state:
+    st.session_state.user_id = None
+
+if "user_email" not in st.session_state:
+    st.session_state.user_email = None
 
 # ---------------- SUPABASE CONNECTION ----------------
 
@@ -38,50 +31,118 @@ try:
     supabase = st.session_state.supabase_client
 
 except Exception as e:
-    st.error("Supabase connection failed. Check Streamlit Secrets.")
+    st.error("Could not connect to Supabase. Please check Streamlit Secrets.")
     st.stop()
 
 
+def get_value(obj, key):
+    if isinstance(obj, dict):
+        return obj.get(key)
+    return getattr(obj, key, None)
 
 
-# ---------------- AUTHENTICATION ----------------
+# ---------------- DATABASE FUNCTIONS ----------------
 
-def login_page():
+def get_data(table):
+    try:
+        response = (
+            supabase.table(table)
+            .select("*")
+            .eq("user_id", st.session_state.user_id)
+            .execute()
+        )
+        return response.data or []
+    except Exception as e:
+        st.error(f"Could not load {table}: {e}")
+        return []
+
+
+def add_data(table, values):
+    try:
+        values["user_id"] = st.session_state.user_id
+        supabase.table(table).insert(values).execute()
+        return True
+    except Exception as e:
+        st.error(f"Could not save information: {e}")
+        return False
+
+
+def delete_data(table, row_id):
+    try:
+        (
+            supabase.table(table)
+            .delete()
+            .eq("id", row_id)
+            .eq("user_id", st.session_state.user_id)
+            .execute()
+        )
+        return True
+    except Exception as e:
+        st.error(f"Could not delete information: {e}")
+        return False
+
+
+def update_medication(row_id, new_status):
+    try:
+        (
+            supabase.table("Medications")
+            .update({"status": new_status})
+            .eq("id", row_id)
+            .eq("user_id", st.session_state.user_id)
+            .execute()
+        )
+        return True
+    except Exception as e:
+        st.error(f"Could not update medication: {e}")
+        return False
+
+
+# ---------------- LOGIN / SIGN UP ----------------
+
+if st.session_state.user_id is None:
 
     st.title("💚 CareCircle")
-    st.subheader("Your family care management dashboard")
-    st.write("Sign in or create an account to continue.")
+    st.subheader("Care, connection and peace of mind")
 
     login_tab, signup_tab = st.tabs(["Login", "Sign Up"])
 
     with login_tab:
+        st.markdown("### Welcome back")
+
         with st.form("login_form"):
             email = st.text_input("Email")
-            password = st.text_input(
-                "Password",
-                type="password"
-            )
-            login_button = st.form_submit_button("Login")
+            password = st.text_input("Password", type="password")
+            login_button = st.form_submit_button("Login", use_container_width=True)
 
         if login_button:
-            try:
-                result = supabase.auth.sign_in_with_password({
-                    "email": email,
-                    "password": password
-                })
+            if not email or not password:
+                st.warning("Please enter your email and password.")
+            else:
+                try:
+                    result = supabase.auth.sign_in_with_password({
+                        "email": email,
+                        "password": password
+                    })
 
-                st.session_state.user_id = result.user.id
-                st.session_state.user_email = result.user.email
+                    auth_user = get_value(result, "user")
+                    user_id = get_value(auth_user, "id")
 
-                st.success("Login successful!")
-                st.rerun()
+                    if user_id:
+                        st.session_state.user_id = str(user_id)
+                        st.session_state.user_email = email
+                        st.success("Login successful!")
+                        st.rerun()
+                    else:
+                        st.error("Login failed. Please check your details.")
 
-            except Exception:
-                st.error("Login failed. Check your email and password.")
+                except Exception as e:
+                    st.error(f"Login error: {e}")
 
     with signup_tab:
+        st.markdown("### Create your account")
+
         with st.form("signup_form"):
-            new_email = st.text_input("Your email")
+            new_email = st.text_input("Email address")
             new_password = st.text_input(
                 "Create password",
                 type="password"
@@ -90,16 +151,18 @@ def login_page():
                 "Confirm password",
                 type="password"
             )
-
-            signup_button = st.form_submit_button("Create Account")
+            signup_button = st.form_submit_button(
+                "Create Account",
+                use_container_width=True
+            )
 
         if signup_button:
             if not new_email or not new_password:
-                st.warning("Please fill in all fields.")
-
+                st.warning("Please complete all fields.")
             elif new_password != confirm_password:
                 st.error("Passwords do not match.")
-
+            elif len(new_password) < 6:
+                st.error("Password must contain at least 6 characters.")
             else:
                 try:
                     result = supabase.auth.sign_up({
@@ -107,34 +170,42 @@ def login_page():
                         "password": new_password
                     })
 
-                    if result.session:
-                        st.session_state.user_id = result.user.id
-                        st.session_state.user_email = result.user.email
-                        st.success("Account created!")
-                        st.rerun()
-                    else:
+                    auth_user = get_value(result, "user")
+                    user_id = get_value(auth_user, "id")
+
+                    if user_id:
                         st.success(
-                            "Account created! Check your email "
-                            "for confirmation, then log in."
+                            "Account created! Please go to Login and sign in."
+                        )
+                    else:
+                        st.error(
+                            "Account was not created. Please try again."
                         )
 
                 except Exception as e:
-                    st.error(f"Sign-up failed: {e}")
+                    st.error(f"Sign-up error: {e}")
 
-
-if not st.session_state.user_id:
-    login_page()
     st.stop()
 
 
-# ---------------- USER DETAILS ----------------
-
-user_id = st.session_state.user_id
+# ---------------- MAIN APP ----------------
 
 st.sidebar.title("💚 CareCircle")
-st.sidebar.caption(st.session_state.user_email)
+st.sidebar.caption("Your care coordination space")
+st.sidebar.write(f"Logged in: {st.session_state.user_email}")
 
-if st.sidebar.button("Logout"):
+page = st.sidebar.radio(
+    "Navigate",
+    [
+        "Dashboard",
+        "Medications",
+        "Appointments",
+        "Care Circle",
+        "Activity Feed"
+    ]
+)
+
+if st.sidebar.button("Logout", use_container_width=True):
     try:
         supabase.auth.sign_out()
     except Exception:
@@ -142,347 +213,295 @@ if st.sidebar.button("Logout"):
 
     st.session_state.user_id = None
     st.session_state.user_email = None
+    st.session_state.pop("supabase_client", None)
     st.rerun()
 
 
-# ---------------- DATABASE FUNCTIONS ----------------
+# ---------------- LOAD DATA ----------------
 
-def get_data(table):
-    return (
-        supabase.table(table)
-        .select("*")
-        .eq("user_id", user_id)
-        .execute()
-        .data
-    )
-
-
-def add_data(table, values):
-    values["user_id"] = user_id
-    return supabase.table(table).insert(values).execute()
-
-
-def delete_data(table, row_id):
-    return (
-        supabase.table(table)
-        .delete()
-        .eq("id", row_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-
-def update_medication(row_id, new_status):
-    return (
-        supabase.table("Medications")
-        .update({"status": new_status})
-        .eq("id", row_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-
-# ---------------- NAVIGATION ----------------
-
-section = st.sidebar.radio(
-    "Navigation",
-    [
-        "Dashboard",
-        "Medications",
-        "Appointments",
-        "Care Circle",
-        "Activity"
-    ]
-)
-
-st.title("💚 CareCircle")
+medications = get_data("Medications")
+appointments = get_data("appoinments")
+members = get_data("Members")
 
 
 # ---------------- DASHBOARD ----------------
 
-if section == "Dashboard":
+if page == "Dashboard":
 
-    st.subheader("Welcome to your dashboard!")
+    st.title("💚 CareCircle Dashboard")
+    st.write("A simple space to coordinate everyday care.")
 
-    try:
-        medications = get_data("Medications")
-        appointments = get_data("appoinments")
-        members = get_data("Members")
+    col1, col2, col3 = st.columns(3)
 
-        col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Medications", len(medications))
 
-        col1.metric("Medications", len(medications))
-        col2.metric("Appointments", len(appointments))
-        col3.metric("Care Circle Members", len(members))
+    with col2:
+        st.metric("Appointments", len(appointments))
 
-        st.divider()
+    with col3:
+        st.metric("Care Circle Members", len(members))
 
-        st.subheader("Medication Overview")
+    st.divider()
 
-        if medications:
-            for med in medications:
-                st.write(
-                    f"💊 **{med['name']}** — "
-                    f"{med['scheduled_time']} — "
-                    f"{med['status']}"
-                )
-        else:
-            st.info("No medications added yet.")
+    st.subheader("Medication Overview")
 
-        st.subheader("Upcoming Appointments")
+    if medications:
+        for med in medications:
+            st.write(
+                f"💊 **{med.get('name', 'Medicine')}** — "
+                f"{med.get('scheduled_time', 'Time not set')} "
+                f"| Status: {med.get('status', 'Pending')}"
+            )
+    else:
+        st.info("No medications added yet.")
 
-        if appointments:
-            for appt in appointments:
-                st.write(
-                    f"📅 **{appt['title']}** — "
-                    f"{appt['date']} at {appt['time']}"
-                )
-        else:
-            st.info("No appointments added yet.")
+    st.subheader("Upcoming Appointments")
 
-    except Exception as e:
-        st.error(f"Dashboard error: {e}")
+    if appointments:
+        for appointment in appointments:
+            st.write(
+                f"📅 **{appointment.get('title', 'Appointment')}** — "
+                f"{appointment.get('date', '')} "
+                f"at {appointment.get('time', '')}"
+            )
+    else:
+        st.info("No appointments added yet.")
+
+    st.caption(
+        "CareCircle is a demonstration app. Medication statuses are "
+        "user-reported and are not independently verified."
+    )
 
 
 # ---------------- MEDICATIONS ----------------
 
-elif section == "Medications":
+elif page == "Medications":
 
-    st.subheader("💊 Medication Management")
+    st.title("💊 Medication Management")
+    st.write("Keep track of medication information.")
 
-    with st.form("medication_form"):
-        name = st.text_input("Medication name")
-        scheduled_time = st.time_input(
-            "Scheduled time",
-            value=time(9, 0)
-        )
+    with st.form("add_medication_form"):
+        medicine_name = st.text_input("Medication name")
+        scheduled_time = st.text_input("Scheduled time")
         notes = st.text_area("Notes")
+        add_medicine = st.form_submit_button("Add Medication")
 
-        submitted = st.form_submit_button("Add Medication")
-
-    if submitted:
-        if name.strip():
-            try:
-                add_data("Medications", {
-                    "name": name.strip(),
-                    "scheduled_time": scheduled_time.strftime("%H:%M"),
-                    "notes": notes,
+    if add_medicine:
+        if not medicine_name.strip():
+            st.warning("Please enter a medication name.")
+        else:
+            success = add_data(
+                "Medications",
+                {
+                    "name": medicine_name.strip(),
+                    "scheduled_time": scheduled_time.strip(),
+                    "notes": notes.strip(),
                     "status": "Pending"
-                })
+                }
+            )
+            if success:
                 st.success("Medication added!")
                 st.rerun()
-            except Exception as e:
-                st.error(f"Could not add medication: {e}")
-        else:
-            st.warning("Enter a medication name.")
 
     st.divider()
     st.subheader("Your Medications")
 
-    try:
-        medications = get_data("Medications")
+    medications = get_data("Medications")
 
-        if not medications:
-            st.info("No medications added yet.")
-
+    if not medications:
+        st.info("No medications have been added.")
+    else:
         for med in medications:
             with st.container(border=True):
-                st.write(f"**{med['name']}**")
-                st.write(f"Time: {med['scheduled_time']}")
-                st.write(f"Notes: {med.get('notes') or 'None'}")
-                st.write(f"Status: {med['status']}")
+                st.write(f"### 💊 {med.get('name', 'Medication')}")
+                st.write(
+                    f"Scheduled time: {med.get('scheduled_time', 'Not set')}"
+                )
+                st.write(f"Notes: {med.get('notes', '')}")
+                st.write(f"Status: {med.get('status', 'Pending')}")
+
+                status_options = ["Pending", "Recorded"]
+
+                current_status = med.get("status", "Pending")
+                if current_status not in status_options:
+                    current_status = "Pending"
+
+                selected_status = st.selectbox(
+                    "Update status",
+                    status_options,
+                    index=status_options.index(current_status),
+                    key=f"status_{med.get('id')}"
+                )
 
                 col1, col2 = st.columns(2)
 
-                if col1.button(
-                    "Mark as Recorded",
-                    key=f"record_{med['id']}"
-                ):
-                    update_medication(med["id"], "Recorded")
-                    st.rerun()
+                with col1:
+                    if st.button(
+                        "Save Status",
+                        key=f"save_{med.get('id')}"
+                    ):
+                        if update_medication(
+                            med.get("id"),
+                            selected_status
+                        ):
+                            st.success("Status updated!")
+                            st.rerun()
 
-                if col2.button(
-                    "Delete",
-                    key=f"delete_med_{med['id']}"
-                ):
-                    delete_data("Medications", med["id"])
-                    st.rerun()
-
-    except Exception as e:
-        st.error(f"Could not load medications: {e}")
+                with col2:
+                    if st.button(
+                        "Delete",
+                        key=f"delete_med_{med.get('id')}"
+                    ):
+                        if delete_data("Medications", med.get("id")):
+                            st.success("Medication deleted.")
+                            st.rerun()
 
 
 # ---------------- APPOINTMENTS ----------------
 
-elif section == "Appointments":
+elif page == "Appointments":
 
-    st.subheader("📅 Appointment Management")
+    st.title("📅 Appointments")
+    st.write("Keep important appointments organised.")
 
     with st.form("appointment_form"):
-
         title = st.text_input("Appointment title")
-        appointment_date = st.date_input(
-            "Appointment date",
-            value=date.today()
-        )
-        appointment_time = st.time_input(
-            "Appointment time",
-            value=time(10, 0)
-        )
-        details = st.text_area("Appointment details")
+        appointment_date = st.date_input("Appointment date", value=date.today())
+        appointment_time = st.text_input("Appointment time")
+        details = st.text_area("Details")
+        add_appointment = st.form_submit_button("Add Appointment")
 
-        submitted = st.form_submit_button("Add Appointment")
-
-    if submitted:
-        if title.strip():
-            try:
-                add_data("appoinments", {
+    if add_appointment:
+        if not title.strip():
+            st.warning("Please enter an appointment title.")
+        else:
+            success = add_data(
+                "appoinments",
+                {
                     "title": title.strip(),
-                    "date": appointment_date.isoformat(),
-                    "time": appointment_time.strftime("%H:%M"),
-                    "details": details
-                })
-
+                    "date": str(appointment_date),
+                    "time": appointment_time.strip(),
+                    "details": details.strip()
+                }
+            )
+            if success:
                 st.success("Appointment added!")
                 st.rerun()
-
-            except Exception as e:
-                st.error(f"Could not add appointment: {e}")
-        else:
-            st.warning("Enter an appointment title.")
 
     st.divider()
     st.subheader("Your Appointments")
 
-    try:
-        appointments = get_data("appoinments")
+    appointments = get_data("appoinments")
 
-        if not appointments:
-            st.info("No appointments added yet.")
-
-        for appt in appointments:
+    if not appointments:
+        st.info("No appointments added yet.")
+    else:
+        for appointment in appointments:
             with st.container(border=True):
-                st.write(f"**{appt['title']}**")
-                st.write(f"Date: {appt['date']}")
-                st.write(f"Time: {appt['time']}")
-                st.write(
-                    f"Details: {appt.get('details') or 'None'}"
-                )
+                st.write(f"### 📅 {appointment.get('title', 'Appointment')}")
+                st.write(f"Date: {appointment.get('date', '')}")
+                st.write(f"Time: {appointment.get('time', '')}")
+                st.write(f"Details: {appointment.get('details', '')}")
 
                 if st.button(
                     "Delete Appointment",
-                    key=f"delete_appt_{appt['id']}"
+                    key=f"delete_app_{appointment.get('id')}"
                 ):
-                    delete_data("appoinments", appt["id"])
-                    st.rerun()
-
-    except Exception as e:
-        st.error(f"Could not load appointments: {e}")
+                    if delete_data("appoinments", appointment.get("id")):
+                        st.success("Appointment deleted.")
+                        st.rerun()
 
 
 # ---------------- CARE CIRCLE ----------------
 
-elif section == "Care Circle":
+elif page == "Care Circle":
 
-    st.subheader("👨‍👩‍👧 Care Circle Members")
+    st.title("👥 Care Circle")
+    st.write("Add people who are part of the care network.")
 
     with st.form("member_form"):
         member_name = st.text_input("Member name")
-        submitted = st.form_submit_button("Add Member")
+        add_member = st.form_submit_button("Add Member")
 
-    if submitted:
-        if member_name.strip():
-            try:
-                add_data("Members", {
-                    "name": member_name.strip()
-                })
+    if add_member:
+        if not member_name.strip():
+            st.warning("Please enter a member name.")
+        else:
+            success = add_data(
+                "Members",
+                {"name": member_name.strip()}
+            )
+            if success:
                 st.success("Member added!")
                 st.rerun()
-            except Exception as e:
-                st.error(f"Could not add member: {e}")
-        else:
-            st.warning("Enter a member name.")
 
     st.divider()
+    st.subheader("Your Care Circle")
 
-    try:
-        members = get_data("Members")
+    members = get_data("Members")
 
-        if not members:
-            st.info("No members added yet.")
-
+    if not members:
+        st.info("No members added yet.")
+    else:
         for member in members:
-            col1, col2 = st.columns([4, 1])
+            with st.container(border=True):
+                st.write(f"👤 **{member.get('name', 'Member')}**")
 
-            col1.write(f"👤 {member['name']}")
-
-            if col2.button(
-                "Remove",
-                key=f"remove_{member['id']}"
-            ):
-                delete_data("Members", member["id"])
-                st.rerun()
-
-    except Exception as e:
-        st.error(f"Could not load members: {e}")
+                if st.button(
+                    "Remove Member",
+                    key=f"remove_member_{member.get('id')}"
+                ):
+                    if delete_data("Members", member.get("id")):
+                        st.success("Member removed.")
+                        st.rerun()
 
 
-# ---------------- ACTIVITY ----------------
+# ---------------- ACTIVITY FEED ----------------
 
-elif section == "Activity":
+elif page == "Activity Feed":
 
-    st.subheader("📋 Activity Overview")
+    st.title("📋 Activity Feed")
+    st.write("A simple overview of information saved in CareCircle.")
 
-    try:
-        medications = get_data("Medications")
-        appointments = get_data("appoinments")
-        members = get_data("Members")
+    st.subheader("Recent Medication Records")
 
-        st.write("### Medication Activity")
-
-        for med in medications:
+    if medications:
+        for med in reversed(medications):
             st.write(
-                f"💊 {med['name']} — {med['status']}"
+                f"💊 {med.get('name', 'Medication')} — "
+                f"{med.get('status', 'Pending')}"
             )
+    else:
+        st.info("No medication activity yet.")
 
-        st.write("### Appointment Activity")
+    st.divider()
+    st.subheader("Appointment Records")
 
-        for appt in appointments:
+    if appointments:
+        for appointment in reversed(appointments):
             st.write(
-                f"📅 {appt['title']} — {appt['date']}"
+                f"📅 {appointment.get('title', 'Appointment')} — "
+                f"{appointment.get('date', '')}"
             )
+    else:
+        st.info("No appointment activity yet.")
 
-        st.write("### Care Circle Activity")
+    st.divider()
+    st.subheader("Care Circle Updates")
 
-        for member in members:
-            st.write(f"👤 {member['name']}")
+    if members:
+        for member in reversed(members):
+            st.write(f"👤 {member.get('name', 'Member')} is in your Care Circle.")
+    else:
+        st.info("No Care Circle members yet.")
 
-        if not medications and not appointments and not members:
-            st.info("No activity recorded yet.")
-
-    except Exception as e:
-        st.error(f"Could not load activity: {e}")
-        
-# ---------------- SUPABASE CONNECTION ----------------
-
-try:
-    if "supabase_client" not in st.session_state:
-        st.session_state.supabase_client = create_client(
-            st.secrets["SUPABASE_URL"],
-            st.secrets["SUPABASE_KEY"]
-        )
-
-    supabase = st.session_state.supabase_client
-
-except Exception as e:
-    st.error("Supabase connection failed. Check Streamlit Secrets.")
-    st.stop()
 
 # ---------------- FOOTER ----------------
 
 st.divider()
 
 st.caption(
-    "CareCircle | A family care management demonstration app. "
-    "Medication records are user-reported, not verified."
+    "💚 CareCircle | Hackathon Demonstration Project | "
+    "Uses fictional demo information. Not a medical or clinical system."
 )
