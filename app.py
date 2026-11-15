@@ -328,8 +328,25 @@ members = get_data("Members")
 
 if page == "Dashboard":
 
-    st.title("💚 CareCircle Dashboard")
-    st.write("A simple space to coordinate everyday care.")
+    st.markdown("""
+<div style="
+    background: linear-gradient(120deg, #104b32, #23965b);
+    padding: 35px;
+    border-radius: 20px;
+    color: white;
+    margin-bottom: 25px;
+">
+    <h1 style="color:white !important;">
+        Welcome to CareCircle 💚
+    </h1>
+    <p style="color:white; font-size:18px;">
+        Care better. Stay connected. Make every day easier.
+    </p>
+    <p style="color:#d9f5e5;">
+        Your everyday care coordination space.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
 
