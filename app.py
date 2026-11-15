@@ -5,83 +5,111 @@ from datetime import date
 
 # ---------------- PAGE SETTINGS ----------------
 
+import streamlit as st
+from supabase import create_client
+from datetime import date
+
 st.set_page_config(
     page_title="CareCircle",
     page_icon="💚",
     layout="wide",
-    # ---------------- PREMIUM CARECIRCLE DESIGN ----------------
-
-st.markdown("""
-<style>
-
-.stApp {
-    background: linear-gradient(135deg, #f4fbf7, #edf7f1);
-    color: #183b2b;
-}
-
-[data-testid="stSidebar"] {
-    background: #123d2b;
-}
-
-[data-testid="stSidebar"] * {
-    color: white !important;
-}
-
-h1, h2, h3 {
-    color: #145c3a !important;
-    font-weight: 750 !important;
-}
-
-.stButton > button {
-    background: #16834b;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 0.65rem 1rem;
-    font-weight: 650;
-    transition: 0.2s ease;
-}
-
-.stButton > button:hover {
-    background: #0d6036;
-    color: white;
-    border: none;
-    transform: translateY(-2px);
-}
-
-.stTextInput input,
-.stTextArea textarea,
-.stSelectbox div[data-baseweb="select"] {
-    border-radius: 10px;
-}
-
-[data-testid="stMetric"] {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #dceee3;
-    box-shadow: 0 4px 14px rgba(20, 92, 58, 0.06);
-}
-
-[data-testid="stMetricValue"] {
-    color: #16834b;
-    font-weight: 800;
-}
-
-div[data-testid="stForm"] {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #dceee3;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 16px;
-}
-
-</style>
-""", unsafe_allow_html=True)
+    initial_sidebar_state="expanded"
 )
+
+
+# ---------------- PREMIUM CARECIRCLE DESIGN ----------------
+
+st.markdown(
+    """
+    <style>
+
+    /* Main background */
+    .stApp {
+        background: linear-gradient(
+            135deg,
+            #f4fbf7,
+            #edf7f1
+        );
+        color: #183b2b;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #123d2b;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    /* Headings */
+    h1, h2, h3 {
+        color: #145c3a !important;
+        font-weight: 750 !important;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background-color: #16834b;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        font-weight: 650;
+    }
+
+    .stButton > button:hover {
+        background-color: #0d6036;
+        color: white;
+        border: none;
+    }
+
+    /* Input fields */
+    .stTextInput input,
+    .stTextArea textarea {
+        border-radius: 10px;
+    }
+
+    /* Dashboard metric cards */
+    [data-testid="stMetric"] {
+        background-color: white;
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid #dceee3;
+        box-shadow: 0 4px 14px rgba(20, 92, 58, 0.06);
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #16834b;
+        font-weight: 800;
+    }
+
+    /* Forms */
+    div[data-testid="stForm"] {
+        background-color: white;
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid #dceee3;
+    }
+
+    /* Cards */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 16px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
+
+
+
+
+
+
 
 # ---------------- SESSION STATE ----------------
 
