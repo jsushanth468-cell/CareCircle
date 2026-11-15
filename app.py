@@ -1,6 +1,5 @@
-
 import streamlit as st
-from datetime import time, date
+from datetime import date, time
 
 st.set_page_config(
     page_title="CareCircle",
@@ -8,208 +7,165 @@ st.set_page_config(
     layout="wide"
 )
 
-# Session storage
 if "medications" not in st.session_state:
     st.session_state.medications = []
 
 if "appointments" not in st.session_state:
     st.session_state.appointments = []
 
-# Styling
+if "members" not in st.session_state:
+    st.session_state.members = []
+
 st.markdown("""
 <style>
 .stApp {
-    background-color: #f5f9f6;
+    background-color: #f4f8f5;
 }
 h1, h2, h3 {
-    color: #174d38;
+    color: #176b50;
 }
-[data-testid="stMetric"] {
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid #dcebe1;
+div.stButton > button {
+    border-radius: 10px;
+    background-color: #176b50;
+    color: white;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
-with st.sidebar:
-    st.title("💚 CareCircle")
-    st.caption("Connected care for every family")
+st.title("💚 CareCircle")
+st.caption("Connected care for every family")
 
-    page = st.radio(
-        "Navigation",
-        ["Dashboard", "Medications", "Appointments", "Care Circle"]
-    )
+page = st.sidebar.radio(
+    "Navigation",
+    ["Dashboard", "Medications", "Appointments", "Care Circle", "Activity"]
+)
 
-# DASHBOARD
 if page == "Dashboard":
-    st.title("Welcome to CareCircle 👋")
-    st.write("Your family care dashboard.")
+    st.header("Your Care Dashboard")
 
-    total_meds = len(st.session_state.medications)
-    recorded = sum(
-        1 for m in st.session_state.medications
-        if m["status"] == "Recorded"
-    )
-    total_appointments = len(st.session_state.appointments)
+    col1, col2, col3 = st.columns(3)
 
-    c1, c2, c3 = st.columns(3)
+    col1.metric("Medication Records", len(st.session_state.medications))
+    col2.metric("Appointments", len(st.session_state.appointments))
+    col3.metric("Care Circle Members", len(st.session_state.members))
 
-    c1.metric("Medication Records", total_meds)
-    c2.metric("Recorded Doses", recorded)
-    c3.metric("Appointments", total_appointments)
+    st.subheader("Recent Medication Records")
 
-    st.divider()
-    st.subheader("💊 Medication Overview")
-
-    if total_meds == 0:
-        st.info("No medication records added yet.")
+    if st.session_state.medications:
+        for i, med in enumerate(st.session_state.medications):
+            st.write(f"💊 {med['name']} — {med['time']} — {med['status']}")
     else:
-        for med in st.session_state.medications:
-            st.write(
-                f"**{med['name']}** — {med['time']} — {med['status']}"
-            )
+        st.info("No medication records yet.")
 
-    st.divider()
-    st.subheader("📅 Upcoming Appointments")
-
-    if total_appointments == 0:
-        st.info("No appointments added yet.")
-    else:
-        for appointment in st.session_state.appointments:
-            st.write(
-                f"**{appointment['doctor']}** — "
-                f"{appointment['date']} at {appointment['time']}"
-            )
-
-    st.caption("CareCircle demo uses fictional information.")
-
-# MEDICATION MANAGER
 elif page == "Medications":
-    st.title("💊 Medication Manager")
-    st.write("Add and manage medication schedule records.")
+    st.header("💊 Medication Manager")
 
     with st.form("medication_form"):
         name = st.text_input("Medication name")
-        scheduled_time = st.time_input(
-            "Scheduled time",
-            value=time(8, 0)
-        )
-        notes = st.text_input("Optional note")
-
+        schedule = st.time_input("Scheduled time", value=time(8, 0))
+        notes = st.text_input("Notes")
         submitted = st.form_submit_button("Add Medication")
 
         if submitted:
             if name.strip():
                 st.session_state.medications.append({
-                    "name": name.strip(),
-                    "time": scheduled_time.strftime("%I:%M %p"),
-                    "notes": notes.strip(),
+                    "name": name,
+                    "time": schedule.strftime("%I:%M %p"),
+                    "notes": notes,
                     "status": "Pending"
                 })
                 st.success("Medication record added!")
+                st.rerun()
             else:
-                st.error("Please enter a medication name.")
+                st.warning("Please enter a medication name.")
 
-    st.divider()
-    st.subheader("Saved Medication Records")
+    st.subheader("Medication Schedule")
 
-    if not st.session_state.medications:
-        st.info("Your medication list is currently empty.")
-    else:
-        for i, med in enumerate(st.session_state.medications):
-            with st.container(border=True):
-                st.write(f"### {med['name']}")
-                st.write(f"Scheduled time: {med['time']}")
+    for i, med in enumerate(st.session_state.medications):
+        with st.container(border=True):
+            st.write(f"**{med['name']}**")
+            st.write(f"Time: {med['time']}")
+            st.write(f"Status: {med['status']}")
 
-                if med["notes"]:
-                    st.caption(med["notes"])
+            col1, col2 = st.columns(2)
 
-                st.write(f"Status: **{med['status']}**")
+            if col1.button("Mark as Recorded", key=f"record_{i}"):
+                st.session_state.medications[i]["status"] = "Recorded"
+                st.rerun()
 
-                col1, col2 = st.columns(2)
+            if col2.button("Delete", key=f"delete_med_{i}"):
+                st.session_state.medications.pop(i)
+                st.rerun()
 
-                with col1:
-                    if med["status"] == "Pending":
-                        if st.button(
-                            "Mark as Recorded",
-                            key=f"record_{i}"
-                        ):
-                            st.session_state.medications[i]["status"] = "Recorded"
-                            st.rerun()
-
-                with col2:
-                    if st.button("Delete", key=f"delete_med_{i}"):
-                        st.session_state.medications.pop(i)
-                        st.rerun()
-
-    st.caption(
-        "Recording a dose is a user-reported action, "
-        "not confirmation of medical adherence."
-    )
-
-# APPOINTMENT MANAGER
 elif page == "Appointments":
-    st.title("📅 Appointments Manager")
-    st.write("Organise and manage healthcare appointments.")
+    st.header("📅 Appointments Manager")
 
     with st.form("appointment_form"):
-        doctor = st.text_input("Doctor or Hospital Name")
-
-        appointment_date = st.date_input(
-            "Appointment Date",
-            value=date.today()
-        )
-
-        appointment_time = st.time_input(
-            "Appointment Time",
-            value=time(10, 0)
-        )
-
-        details = st.text_area("Appointment Details or Notes")
+        title = st.text_input("Appointment title")
+        appointment_date = st.date_input("Date", value=date.today())
+        appointment_time = st.time_input("Time", value=time(10, 0))
+        details = st.text_area("Additional details")
 
         submitted = st.form_submit_button("Add Appointment")
 
         if submitted:
-            if doctor.strip():
+            if title.strip():
                 st.session_state.appointments.append({
-                    "doctor": doctor.strip(),
-                    "date": appointment_date.strftime("%d %B %Y"),
+                    "title": title,
+                    "date": str(appointment_date),
                     "time": appointment_time.strftime("%I:%M %p"),
-                    "details": details.strip()
+                    "details": details
                 })
-                st.success("Appointment added successfully!")
+                st.success("Appointment added!")
+                st.rerun()
             else:
-                st.error("Please enter a doctor or hospital name.")
+                st.warning("Please enter an appointment title.")
 
-    st.divider()
-    st.subheader("Your Saved Appointments")
+    for i, appointment in enumerate(st.session_state.appointments):
+        with st.container(border=True):
+            st.write(f"**{appointment['title']}**")
+            st.write(f"Date: {appointment['date']}")
+            st.write(f"Time: {appointment['time']}")
+            st.write(appointment["details"])
 
-    if not st.session_state.appointments:
-        st.info("No appointments added yet.")
-    else:
-        for i, appointment in enumerate(
-            st.session_state.appointments
-        ):
-            with st.container(border=True):
-                st.write(f"### 🏥 {appointment['doctor']}")
-                st.write(f"Date: {appointment['date']}")
-                st.write(f"Time: {appointment['time']}")
+            if st.button("Delete Appointment", key=f"delete_appointment_{i}"):
+                st.session_state.appointments.pop(i)
+                st.rerun()
 
-                if appointment["details"]:
-                    st.caption(appointment["details"])
-
-                if st.button(
-                    "Delete Appointment",
-                    key=f"delete_appointment_{i}"
-                ):
-                    st.session_state.appointments.pop(i)
-                    st.rerun()
-
-# CARE CIRCLE
 elif page == "Care Circle":
-    st.title("👨‍👩‍👧 Family Care Circle")
-    st.write("Connect family members and caregivers.")
-    st.info("Family collaboration features are coming next.")
+    st.header("👨‍👩‍👧 Care Circle")
+
+    with st.form("member_form"):
+        member = st.text_input("Family member name")
+        submitted = st.form_submit_button("Add Member")
+
+        if submitted:
+            if member.strip():
+                st.session_state.members.append(member.strip())
+                st.success("Member added!")
+                st.rerun()
+            else:
+                st.warning("Enter a name.")
+
+    for i, member in enumerate(st.session_state.members):
+        col1, col2 = st.columns([4, 1])
+        col1.write(f"👤 {member}")
+
+        if col2.button("Remove", key=f"remove_{i}"):
+            st.session_state.members.pop(i)
+            st.rerun()
+
+elif page == "Activity":
+    st.header("📋 Activity Feed")
+
+    if not st.session_state.medications and not st.session_state.appointments:
+        st.info("No activity to display yet.")
+    else:
+        for med in st.session_state.medications:
+            st.write(f"💊 {med['name']} — {med['status']}")
+
+        for appointment in st.session_state.appointments:
+            st.write(f"📅 {appointment['title']} — {appointment['date']}")
+
+st.divider()
+st.caption("💚 CareCircle | Connected care for every family | Demonstration application")
