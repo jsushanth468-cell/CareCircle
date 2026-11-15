@@ -8,7 +8,7 @@ from datetime import date
 st.set_page_config(
     page_title="CareCircle",
     page_icon="💚",
-    layout="wide"
+    layout="wide",
     # ---------------- PREMIUM CARECIRCLE DESIGN ----------------
 
 st.markdown("""
